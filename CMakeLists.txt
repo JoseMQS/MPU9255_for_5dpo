@@ -17,6 +17,13 @@ include_directories(
   ${Eigen3_INCLUDE_DIRS}
 )
 
+## Mark other files for installation (e.g. launch and bag files, etc.)
+install(DIRECTORY
+  launch
+  calib_matrix
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
 add_executable(MPU9255_node src/MPU9255_node.cpp)
 target_link_libraries(MPU9255_node ${catkin_LIBRARIES} Eigen3::Eigen)
 target_link_libraries (MPU9255_node wiringPi)
