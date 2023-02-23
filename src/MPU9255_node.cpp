@@ -6,6 +6,7 @@
 #include "sensor_msgs/Imu.h"
 #include <sstream>
 #include "sensor_msgs/MagneticField.h"
+#include <Eigen/Dense>
 
 int main(int argc, char **argv){
 
@@ -15,7 +16,19 @@ int main(int argc, char **argv){
   ros::Publisher pub_imu = n.advertise<sensor_msgs::Imu>("imu/data_raw", 2);
   ros::Publisher pub_mag = n.advertise<sensor_msgs::MagneticField>("imu/mag", 2);
 
-        int fd,fe;
+
+  // Get calibration matrix from parameters, matrix is a 1D vector in mode RowMajor
+  std::vector<double> calib_matrix_vec;
+  if (!ros::param::get("calibration_matrix", calib_matrix_vec))
+  {
+      ROS_ERROR("Failed to get calibration matrix from parameter server.");
+      return 1;
+  }
+
+  Eigen::Matrix4d calib_matrix = Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::RowMajor>>(calib_matrix_vec.data());
+
+
+  int fd,fe;
   wiringPiSetupSys();
   fd = wiringPiI2CSetup(0x68);
 
@@ -49,9 +62,21 @@ int main(int argc, char **argv){
     InBuffer[1]=  (wiringPiI2CReadReg8 (fd, 0x3D)<<8)|wiringPiI2CReadReg8 (fd, 0x3E);
     InBuffer[2]=  (wiringPiI2CReadReg8 (fd, 0x3F)<<8)|wiringPiI2CReadReg8 (fd, 0x40);
 
-    data_imu.linear_acceleration.x = InBuffer[0]*conversion_acce;
-    data_imu.linear_acceleration.y = InBuffer[1]*conversion_acce;
-    data_imu.linear_acceleration.z = InBuffer[2]*conversion_acce;
+    //calibrate IMU Acelerometro with the given matrix
+    
+    Eigen::Vector4d calibrated_ACC,raw_ACC;
+    raw_ACC << InBuffer[0]*conversion_acce, InBuffer[1]*conversion_acce, InBuffer[2]*conversion_acce, 1;
+    calibrated_ACC = calib_matrix * raw_ACC;
+
+    /*
+    //calibrate IMU Acelerometro with the given matrix
+                      //calibrated    calib_mat      uncalibrated_________________________________
+    Eigen::Vector4d calibrated_ACC = calib_matrix * Eigen::Vector4d(InBuffer[0]*conversion_acce, InBuffer[1]*conversion_acce, InBuffer[2]*conversion_acce, 1)
+    */
+
+    data_imu.linear_acceleration.x = calibrated_ACC(0);
+    data_imu.linear_acceleration.y = calibrated_ACC(1);
+    data_imu.linear_acceleration.z = calibrated_ACC(2);
 
      //datos giroscopio
     InBuffer[3]=  (wiringPiI2CReadReg8 (fd, 0x43)<<8)|wiringPiI2CReadReg8 (fd, 0x44);

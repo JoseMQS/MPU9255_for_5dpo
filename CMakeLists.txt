@@ -8,13 +8,16 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+find_package(Eigen3 REQUIRED)
+
 catkin_package()
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${Eigen3_INCLUDE_DIRS}
 )
 
 add_executable(MPU9255_node src/MPU9255_node.cpp)
-target_link_libraries(MPU9255_node ${catkin_LIBRARIES})
+target_link_libraries(MPU9255_node ${catkin_LIBRARIES} Eigen3::Eigen)
 target_link_libraries (MPU9255_node wiringPi)
 
