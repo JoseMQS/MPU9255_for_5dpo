@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   sensor_msgs
+  sensor_msgs_ext
   tf
 )
 
@@ -28,3 +29,6 @@ add_executable(MPU9255_node src/MPU9255_node.cpp)
 target_link_libraries(MPU9255_node ${catkin_LIBRARIES} Eigen3::Eigen)
 target_link_libraries (MPU9255_node wiringPi)
 
+add_executable(MPU9255_calibration_node src/MPU9255_calibration_node.cpp)
+target_link_libraries(MPU9255_calibration_node ${catkin_LIBRARIES})
+target_link_libraries (MPU9255_calibration_node wiringPi)
