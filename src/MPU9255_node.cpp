@@ -18,14 +18,20 @@ int main(int argc, char **argv){
 
 
   // Get calibration matrix from parameters, matrix is a 1D vector in mode RowMajor
-  std::vector<double> calib_matrix_vec;
+  std::vector<double> calib_matrix_vec,calib_matrix_vec_mag;
   if (!ros::param::get("calibration_matrix", calib_matrix_vec))
+  {
+      ROS_ERROR("Failed to get calibration matrix from parameter server.");
+      return 1;
+  }
+  if (!ros::param::get("calibration_matrix_mag", calib_matrix_vec_mag))
   {
       ROS_ERROR("Failed to get calibration matrix from parameter server.");
       return 1;
   }
 
   Eigen::Matrix4d calib_matrix = Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::RowMajor>>(calib_matrix_vec.data());
+  Eigen::Matrix4d calib_matrix_mag = Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::RowMajor>>(calib_matrix_vec_mag.data());
 
 
   int fd,fe;
@@ -102,9 +108,13 @@ int main(int argc, char **argv){
     InBuffer[7]=  (wiringPiI2CReadReg8 (fe, 0x06)<<8)|wiringPiI2CReadReg8 (fe, 0x05);
     InBuffer[8]=  (wiringPiI2CReadReg8 (fe, 0x08)<<8)|wiringPiI2CReadReg8 (fe, 0x07);
 
-    data_mag.magnetic_field.x = InBuffer[6];
-    data_mag.magnetic_field.y = InBuffer[7];
-    data_mag.magnetic_field.z = InBuffer[8];
+    Eigen::Vector4d calibrated_MAG,raw_MAG;
+    raw_MAG << InBuffer[6], InBuffer[7], InBuffer[8], 1;
+    calibrated_MAG = calib_matrix_mag * raw_MAG;
+
+    data_mag.magnetic_field.x = calibrated_MAG[0];
+    data_mag.magnetic_field.y = calibrated_MAG[1];
+    data_mag.magnetic_field.z = calibrated_MAG[2];
 
     pub_imu.publish(data_imu);
 
