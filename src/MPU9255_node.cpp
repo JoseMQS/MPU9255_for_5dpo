@@ -89,9 +89,10 @@ int main(int argc, char **argv){
     InBuffer[4]=  (wiringPiI2CReadReg8 (fd, 0x45)<<8)|wiringPiI2CReadReg8 (fd, 0x46);
     InBuffer[5]=  (wiringPiI2CReadReg8 (fd, 0x47)<<8)|wiringPiI2CReadReg8 (fd, 0x48);
 
-    data_imu.angular_velocity.x = InBuffer[3]*conversion_gyro;
-    data_imu.angular_velocity.y = InBuffer[4]*conversion_gyro;
-    data_imu.angular_velocity.z = InBuffer[5]*conversion_gyro;
+    double imu_correct_fact=0.25;
+    data_imu.angular_velocity.x = (InBuffer[3]*conversion_gyro-0.080399581145739)*imu_correct_fact;
+    data_imu.angular_velocity.y = (InBuffer[4]*conversion_gyro-0.081997236464282)*imu_correct_fact;
+    data_imu.angular_velocity.z = (InBuffer[5]*conversion_gyro-0.134425770919387)*imu_correct_fact;
 
     //datos magnetómetro
 
